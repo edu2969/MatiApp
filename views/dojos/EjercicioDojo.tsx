@@ -1,24 +1,32 @@
 import React, { useState } from "react";
-import { ImageBackground, Text, View, TouchableHighlight } from "react-native";
+import { ImageBackground, Text, View, TouchableHighlight, Dimensions } from "react-native";
 import PagerView from 'react-native-pager-view';
 import CountDown from 'react-native-countdown-component';
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import CircularProgress from "../charts/CircularProgress";
+const { width, height } = Dimensions.get('window');
 
-const generadorDigito = () => {
-  return Math.floor(Math.random() * 9);
+const CANTIDAD_EJERCICIOS = 3;
+
+const generadorDigito = (): string => {
+  return '' + (Math.floor(Math.random() * 7) + 2);
 }
 
 const EjercicioDojo = ({ navigation }) => {
   const pagerView = React.createRef<PagerView>();
-  const [contador, setContador] = useState(3);
   const [hoja, setHoja] = useState({
     titulo: "COMIENZA EN",
-    numero: false,
+    numero: 0,
     digito1: '?',
     digito2: '?',
     operacion: '+',
-    resultado: ' ',
-  })
+    resultado: '',
+    iniciado: new Date(),
+  });
+  const [stats, setStats] = useState({
+    correctas: 0,
+    tiempoPromedio: 0,
+  });
 
   const toggleStart = () => {
     setHoja({
@@ -27,12 +35,72 @@ const EjercicioDojo = ({ navigation }) => {
       digito1: generadorDigito(),
       digito2: generadorDigito(),
       operacion: '+',
+      resultado: '',
       iniciado: new Date(),
     });
   }
 
   const presionaTecla = (tecla) => {
-    console.log("TECLA", tecla);
+    const nuevaHoja = {
+      titulo: 'EJERCICIO',
+      numero: hoja.numero,
+      digito1: hoja.digito1,
+      digito2: hoja.digito2,
+      operacion: '+',
+      resultado: '',
+      iniciado: new Date(),
+    }
+    if (tecla === "D") {
+      nuevaHoja.resultado = hoja.resultado.substring(0, hoja.resultado.length - 1);
+    } else if (tecla == "O") {
+      const tiempoPromedio = 0;
+      const nuevaStats = {
+        correctas: stats.correctas,
+        tiempoPromedio
+      }
+      const valor = Number(hoja.resultado);
+      const ahora = new Date();
+      if (Number(hoja.digito1) + Number(hoja.digito2) == valor) {
+        nuevaStats.correctas++;
+      }
+      console.log("CALCULO", ahora.getTime() - hoja.iniciado.getTime(), stats.tiempoPromedio, hoja.numero);
+      nuevaStats.tiempoPromedio = ((ahora.getTime() - hoja.iniciado.getTime()) + stats.tiempoPromedio) / hoja.numero;
+      setStats({ ...nuevaStats });
+      nuevaHoja.iniciado = ahora;
+      nuevaHoja.resultado = '';
+      nuevaHoja.numero++;
+      if (nuevaHoja.numero == (CANTIDAD_EJERCICIOS + 1)) {
+        pagerView.current?.setPage(1);
+        return;
+      }
+      nuevaHoja.digito1 = generadorDigito();
+      nuevaHoja.digito2 = generadorDigito();
+    } else {
+      nuevaHoja.resultado = (hoja.resultado ? hoja.resultado : '') + tecla;
+    }
+    setHoja({ ...nuevaHoja });
+  }
+
+  const keyboard = () => {
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, "D", 0, "O"].map((value, index) => {
+      var estilos: any = [styles.tecla];
+      if (value == "D") estilos.push(styles.roja);
+      else if (value == "O") estilos.push(styles.verde);
+      else estilos = styles.tecla;
+      var tipoTextoTecla;
+      if (value == "D") tipoTextoTecla = (<Icon name="backspace" style={[styles.txtTecla, styles.txtIcon]} />)
+      else if (value == "O") tipoTextoTecla = (<Icon name="check" style={[styles.txtTecla, styles.txtIcon]} />)
+      else tipoTextoTecla = (<Text style={styles.txtTecla}>{value}</Text>);
+      return (
+        <TouchableHighlight key={'tecla_'.concat(value)} style={estilos} onPress={() => presionaTecla(value)}>
+          {tipoTextoTecla}
+        </TouchableHighlight>
+      );
+    })
+  }
+
+  const goAhead = () => {
+    navigation.goBack();
   }
 
   return (
@@ -91,52 +159,37 @@ const EjercicioDojo = ({ navigation }) => {
               </View>
               <View style={styles.marcoSimbolo}>
                 <View style={styles.resultado}>
-                  <Text style={styles.txtResultado}>99</Text>
+                  <Text style={styles.txtResultado}>{hoja.resultado}</Text>
                 </View>
               </View>
             </View>
           </View>
           <View style={styles.teclado}>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(1)}>
-              <Text style={styles.txtTecla}>1</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(2)}>
-              <Text style={styles.txtTecla}>2</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(3)}>
-              <Text style={styles.txtTecla}>3</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(4)}>
-              <Text style={styles.txtTecla}>4</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(5)}>
-              <Text style={styles.txtTecla}>5</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(6)}>
-              <Text style={styles.txtTecla}>6</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(7)}>
-              <Text style={styles.txtTecla}>7</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(8)}>
-              <Text style={styles.txtTecla}>8</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(9)}>
-              <Text style={styles.txtTecla}>9</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={[styles.tecla, styles.roja]} onPress={() => presionaTecla("D")}>
-              <Icon name="backspace" style={[styles.txtTecla, styles.txtIcon]} />
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.tecla} onPress={() => presionaTecla(0)}>
-              <Text style={styles.txtTecla}>0</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={[styles.tecla, styles.verde]} onPress={() => presionaTecla("O")}>
-              <Icon name="check" style={[styles.txtTecla, styles.txtIcon]} />
-            </TouchableHighlight>
+            {keyboard()}
           </View>
         </View>
         <View style={styles.container} key="2">
-          <Text style={styles.text}>Chao</Text>
+          <Text style={styles.tituloGrafico}>Efectividad</Text>
+          <CircularProgress inititalProgress={stats.correctas / 10}></CircularProgress>
+          <View style={styles.row}>
+            <View style={styles.column1}>
+              <Text style={styles.tituloGrafico}>Correctas</Text>
+              <Text style={styles.contador}>{stats.correctas}</Text>
+            </View>
+            <View style={styles.column2}>
+              <Text style={styles.tituloGrafico}>Tiempo promedio</Text>
+              <View style={styles.row}>
+                <Text style={styles.contador}>{(stats.tiempoPromedio / 1000).toFixed(1)}</Text>
+                <Text style={styles.small}>secs</Text>
+              </View>
+            </View>
+          </View>
+          <View style={styles.row}>
+            <TouchableHighlight key="btn-continuar" style={styles.iconFrame} onPress={goAhead}>
+              <Icon name="sync" style={styles.iconPrice}></Icon>
+            </TouchableHighlight>
+          </View>
+          <Text style={styles.etiqueta}>Buen intento, ¡Continúa entrenando!</Text>
         </View>
       </PagerView>
     </ImageBackground >
@@ -150,7 +203,6 @@ const styles = {
     flex: 1,
   },
   container: {
-    flex: 1,
     flexDirection: 'column',
     padding: 5,
   },
@@ -200,7 +252,7 @@ const styles = {
     width: 80,
     borderWidth: 2,
     borderColor: 'gray',
-    paddingLeft: 8,
+    paddingLeft: 12,
     borderRadius: 6,
     marginBottom: 10,
   },
@@ -209,7 +261,7 @@ const styles = {
     fontSize: 40,
   },
   ejercicio: {
-    backgroundColor: '#cccccc55',
+    backgroundColor: '#00000055',
     paddingVertical: 20,
     borderRadius: 8,
   },
@@ -251,6 +303,50 @@ const styles = {
   },
   txtIcon: {
     paddingTop: 14,
+  },
+  tituloGrafico: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'center',
+  },
+  column1: {
+    width: '30%',
+  },
+  column2: {
+    width: '70%',
+    alignItems: 'center',
+  },
+  small: {
+    fontSize: 20,
+    color: 'white',
+    marginTop: 60,
+  },
+  iconFrame: {
+    width: '70%',
+    height: width * 0.7,
+    padding: '19%',
+    backgroundColor: '#1877F2',
+    borderRadius: width * 0.35,
+  },
+  iconPrice: {
+    fontSize: width * 0.30,
+    color: 'white',
+    textAlign: 'center',
+  },
+  etiqueta: {
+    color: 'white',
+    width: '100%',
+    fontSize: 30,
+    textAlign: 'center',
+    fontFamily: 'OpenSans-Light',
+    position: 'absolute',
+    bottom: 20,
   }
 }
 
