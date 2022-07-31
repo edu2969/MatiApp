@@ -5,12 +5,19 @@ import Panel from './views/Panel';
 import Login from './views/Login';
 import AritmeticaDojo from './views/dojos/AritmeticaDojo';
 import EjercicioDojo from './views/dojos/EjercicioDojo';
+import { StatusBar } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
   return (
     <NavigationContainer>
+      <StatusBar
+        animated={true}
+        backgroundColor='#00000022'
+        barStyle='default'
+        showHideTransition='fade'
+        translucent={true} />
       <Stack.Navigator screenOptions={{
         headerShown: false
       }}>

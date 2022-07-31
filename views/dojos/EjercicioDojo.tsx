@@ -6,10 +6,14 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import CircularProgress from "../charts/CircularProgress";
 const { width, height } = Dimensions.get('window');
 
-const CANTIDAD_EJERCICIOS = 3;
+const CANTIDAD_EJERCICIOS = 3, CANTIDAD_DIGITOS = 2;
 
-const generadorDigito = (): string => {
-  return '' + (Math.floor(Math.random() * 7) + 2);
+const generadorDigito = (): number => {
+  return Math.floor(Math.random() * 7) + 2;
+}
+
+const arregloDigitos = (largo: number): number[] => {
+  return Array.from({ length: largo }, () => generadorDigito())
 }
 
 const EjercicioDojo = ({ navigation }) => {
@@ -17,8 +21,7 @@ const EjercicioDojo = ({ navigation }) => {
   const [hoja, setHoja] = useState({
     titulo: "COMIENZA EN",
     numero: 0,
-    digito1: '?',
-    digito2: '?',
+    digitos: [0, 0],
     operacion: '+',
     resultado: '',
     iniciado: new Date(),
@@ -28,12 +31,13 @@ const EjercicioDojo = ({ navigation }) => {
     tiempoPromedio: 0,
   });
 
+  const digitos = arregloDigitos(CANTIDAD_DIGITOS);
+
   const toggleStart = () => {
     setHoja({
       titulo: 'EJERCICIO',
       numero: 1,
-      digito1: generadorDigito(),
-      digito2: generadorDigito(),
+      digitos,
       operacion: '+',
       resultado: '',
       iniciado: new Date(),
@@ -44,8 +48,7 @@ const EjercicioDojo = ({ navigation }) => {
     const nuevaHoja = {
       titulo: 'EJERCICIO',
       numero: hoja.numero,
-      digito1: hoja.digito1,
-      digito2: hoja.digito2,
+      digitos,
       operacion: '+',
       resultado: '',
       iniciado: new Date(),
@@ -60,7 +63,8 @@ const EjercicioDojo = ({ navigation }) => {
       }
       const valor = Number(hoja.resultado);
       const ahora = new Date();
-      if (Number(hoja.digito1) + Number(hoja.digito2) == valor) {
+      const total = hoja.digititos.reduce((prev, current) => prev + current);
+      if (total == valor) {
         nuevaStats.correctas++;
       }
       console.log("CALCULO", ahora.getTime() - hoja.iniciado.getTime(), stats.tiempoPromedio, hoja.numero);
@@ -73,8 +77,7 @@ const EjercicioDojo = ({ navigation }) => {
         pagerView.current?.setPage(1);
         return;
       }
-      nuevaHoja.digito1 = generadorDigito();
-      nuevaHoja.digito2 = generadorDigito();
+      nuevaHoja.digitos = arregloDigitos();
     } else {
       nuevaHoja.resultado = (hoja.resultado ? hoja.resultado : '') + tecla;
     }
@@ -99,6 +102,16 @@ const EjercicioDojo = ({ navigation }) => {
     })
   }
 
+  const operandos = (cantidadOperandos: number) => {
+    let operandos = [];
+    digitos.map((digito, indice) => {
+      return (<View style={styles.marcoSimbolo}>
+        <Text style={styles.txtSimbolo}>{hoja.digitos[indice]}</Text>
+      </View>);
+    })
+
+  }
+
   const goAhead = () => {
     navigation.goBack();
   }
@@ -115,27 +128,6 @@ const EjercicioDojo = ({ navigation }) => {
         scrollEnabled={false}
         ref={pagerView}>
         <View style={styles.container} key="1">
-          <Text style={styles.titulo}>{hoja.titulo}</Text>
-          {hoja.numero ?
-            <Text style={styles.contador}>{hoja.numero}</Text>
-            :
-            <CountDown
-              until={3}
-              onFinish={toggleStart}
-              timeLabels={false}
-              timeToShow={['S']}
-              digitStyle={{
-                backgroundColor: 'transparent',
-                height: 120,
-              }}
-              digitTxtStyle={{
-                fontWeight: 'normal',
-                fontFamily: 'DS-Digital',
-                padding: 0,
-                top: -20,
-              }}
-              size={100}
-            />}
           <View style={styles.ejercicio}>
             <View style={styles.fila}>
               <View style={styles.columna}>
@@ -144,12 +136,30 @@ const EjercicioDojo = ({ navigation }) => {
                 </View>
               </View>
               <View style={styles.columna}>
-                <View style={styles.marcoSimbolo}>
-                  <Text style={styles.txtSimbolo}>{hoja.digito1}</Text>
-                </View>
-                <View style={styles.marcoSimbolo}>
-                  <Text style={styles.txtSimbolo}>{hoja.digito2}</Text>
-                </View>
+                {operandos(2)}
+              </View>
+              <View style={styles.columna}>
+                <Text style={styles.titulo}>{hoja.titulo}</Text>
+                {hoja.numero ?
+                  <Text style={styles.contador}>{hoja.numero}</Text>
+                  :
+                  <CountDown
+                    until={3}
+                    onFinish={toggleStart}
+                    timeLabels={false}
+                    timeToShow={['S']}
+                    digitStyle={{
+                      backgroundColor: 'transparent',
+                      height: 120,
+                    }}
+                    digitTxtStyle={{
+                      fontWeight: 'normal',
+                      fontFamily: 'DS-Digital',
+                      padding: 0,
+                      top: -20,
+                    }}
+                    size={100}
+                  />}
               </View>
             </View>
             <View style={styles.linea}></View>
@@ -204,7 +214,7 @@ const styles = {
   },
   container: {
     flexDirection: 'column',
-    padding: 5,
+    padding: 0,
   },
   icons: {
     color: 'white',
@@ -242,9 +252,10 @@ const styles = {
     marginHorizontal: 4,
   },
   txtSimbolo: {
-    color: 'white',
+    color: 'black',
     fontSize: 40,
     paddingLeft: 16,
+    fontFamily: 'DS-Digital',
   },
   resultado: {
     backgroundColor: 'white',
@@ -261,15 +272,14 @@ const styles = {
     fontSize: 40,
   },
   ejercicio: {
-    backgroundColor: '#00000055',
+    backgroundColor: '#DDDDDD',
     paddingVertical: 20,
-    borderRadius: 8,
   },
   linea: {
-    backgroundColor: 'white',
-    height: 6,
+    backgroundColor: 'black',
+    height: 3,
     width: '40%',
-    borderRadius: 3,
+    borderRadius: 1,
     marginLeft: '30%',
     marginBottom: 10,
   },
