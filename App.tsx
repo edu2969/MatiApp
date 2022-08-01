@@ -14,7 +14,7 @@ const App = () => {
     <NavigationContainer>
       <StatusBar
         animated={true}
-        backgroundColor='#00000022'
+        backgroundColor='#00000000'
         barStyle='default'
         showHideTransition='fade'
         translucent={true} />

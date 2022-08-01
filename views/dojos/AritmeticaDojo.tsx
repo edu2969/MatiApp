@@ -201,7 +201,8 @@ const styles = {
   container: {
     flex: 1,
     flexDirection: 'column',
-    padding: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 16,
   },
   content: {
     flex: 9,

@@ -22,7 +22,7 @@ const CIRCLE_LENGTH = 2 * Math.PI * R;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-export const CircularProgress = ({ inititalProgress }) => {
+export const CircularProgress = ({ initialProgress }) => {
   const progress = useSharedValue(0);
 
   const animatedProps = useAnimatedProps(() => ({
@@ -34,7 +34,7 @@ export const CircularProgress = ({ inititalProgress }) => {
   });
 
   const onPress = useCallback(() => {
-    progress.value = withTiming(inititalProgress, { duration: 2000 });
+    progress.value = withTiming(initialProgress || 0.5, { duration: 2000 });
   }, []);
 
   onPress();

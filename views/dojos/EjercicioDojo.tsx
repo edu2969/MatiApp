@@ -1,18 +1,20 @@
 import React, { useState } from "react";
-import { ImageBackground, Text, View, TouchableHighlight, Dimensions } from "react-native";
+import { Text, View, TouchableHighlight, Dimensions, ImageBackground } from "react-native";
 import PagerView from 'react-native-pager-view';
 import CountDown from 'react-native-countdown-component';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import CircularProgress from "../charts/CircularProgress";
 const { width, height } = Dimensions.get('window');
+import LinearGradient from 'react-native-linear-gradient';
 
-const CANTIDAD_EJERCICIOS = 3, CANTIDAD_DIGITOS = 2;
+const CANTIDAD_EJERCICIOS = 3, CANTIDAD_DIGITOS = 8;
 
 const generadorDigito = (): number => {
   return Math.floor(Math.random() * 7) + 2;
 }
 
 const arregloDigitos = (largo: number): number[] => {
+  console.log("Generando arreglo");
   return Array.from({ length: largo }, () => generadorDigito())
 }
 
@@ -21,23 +23,22 @@ const EjercicioDojo = ({ navigation }) => {
   const [hoja, setHoja] = useState({
     titulo: "COMIENZA EN",
     numero: 0,
-    digitos: [0, 0],
+    digitos: Array.from({ length: CANTIDAD_DIGITOS }, () => 0),
     operacion: '+',
     resultado: '',
     iniciado: new Date(),
   });
   const [stats, setStats] = useState({
     correctas: 0,
+    porcentage: 0,
     tiempoPromedio: 0,
   });
-
-  const digitos = arregloDigitos(CANTIDAD_DIGITOS);
 
   const toggleStart = () => {
     setHoja({
       titulo: 'EJERCICIO',
       numero: 1,
-      digitos,
+      digitos: arregloDigitos(CANTIDAD_DIGITOS),
       operacion: '+',
       resultado: '',
       iniciado: new Date(),
@@ -48,7 +49,7 @@ const EjercicioDojo = ({ navigation }) => {
     const nuevaHoja = {
       titulo: 'EJERCICIO',
       numero: hoja.numero,
-      digitos,
+      digitos: hoja.digitos,
       operacion: '+',
       resultado: '',
       iniciado: new Date(),
@@ -59,25 +60,28 @@ const EjercicioDojo = ({ navigation }) => {
       const tiempoPromedio = 0;
       const nuevaStats = {
         correctas: stats.correctas,
-        tiempoPromedio
+        tiempoPromedio,
+        porcentage: 0,
       }
       const valor = Number(hoja.resultado);
       const ahora = new Date();
-      const total = hoja.digititos.reduce((prev, current) => prev + current);
+      const total = hoja.digitos.reduce((prev, current) => prev + current);
       if (total == valor) {
         nuevaStats.correctas++;
       }
       console.log("CALCULO", ahora.getTime() - hoja.iniciado.getTime(), stats.tiempoPromedio, hoja.numero);
       nuevaStats.tiempoPromedio = ((ahora.getTime() - hoja.iniciado.getTime()) + stats.tiempoPromedio) / hoja.numero;
-      setStats({ ...nuevaStats });
       nuevaHoja.iniciado = ahora;
       nuevaHoja.resultado = '';
       nuevaHoja.numero++;
       if (nuevaHoja.numero == (CANTIDAD_EJERCICIOS + 1)) {
         pagerView.current?.setPage(1);
+        nuevaStats.porcentage = nuevaStats.correctas / CANTIDAD_EJERCICIOS;
+        setStats({ ...nuevaStats });
         return;
       }
-      nuevaHoja.digitos = arregloDigitos();
+      setStats({ ...nuevaStats });
+      nuevaHoja.digitos = arregloDigitos(CANTIDAD_DIGITOS);
     } else {
       nuevaHoja.resultado = (hoja.resultado ? hoja.resultado : '') + tecla;
     }
@@ -87,29 +91,29 @@ const EjercicioDojo = ({ navigation }) => {
   const keyboard = () => {
     return [1, 2, 3, 4, 5, 6, 7, 8, 9, "D", 0, "O"].map((value, index) => {
       var estilos: any = [styles.tecla];
-      if (value == "D") estilos.push(styles.roja);
-      else if (value == "O") estilos.push(styles.verde);
-      else estilos = styles.tecla;
       var tipoTextoTecla;
       if (value == "D") tipoTextoTecla = (<Icon name="backspace" style={[styles.txtTecla, styles.txtIcon]} />)
       else if (value == "O") tipoTextoTecla = (<Icon name="check" style={[styles.txtTecla, styles.txtIcon]} />)
       else tipoTextoTecla = (<Text style={styles.txtTecla}>{value}</Text>);
+      const colores = value == "D" ? ['#E78786', '#E67776', '#E67776', '#D66766', '#D66766'] :
+        value == "O" ? ['#586F6B', '#2A4A51', '#2A4A51', '#323837', '#323837'] :
+          ['#A8B2BA', '#9EA2B3', '#9EA2B3', '#9198A4', '#9198A4'];
       return (
         <TouchableHighlight key={'tecla_'.concat(value)} style={estilos} onPress={() => presionaTecla(value)}>
-          {tipoTextoTecla}
+          <LinearGradient colors={colores} style={styles.linearGradient} locations={[.1, .3, .7, .9, 1]}>
+            {tipoTextoTecla}
+          </LinearGradient>
         </TouchableHighlight>
       );
     })
   }
 
-  const operandos = (cantidadOperandos: number) => {
-    let operandos = [];
-    digitos.map((digito, indice) => {
+  const operandos = () => {
+    return hoja.digitos?.map((digito) => {
       return (<View style={styles.marcoSimbolo}>
-        <Text style={styles.txtSimbolo}>{hoja.digitos[indice]}</Text>
+        <Text style={styles.txtSimbolo}>{digito}</Text>
       </View>);
     })
-
   }
 
   const goAhead = () => {
@@ -123,7 +127,7 @@ const EjercicioDojo = ({ navigation }) => {
         resizeMode: "cover",
         alignSelf: "flex-end",
         opacity: 0.4,
-      }} >
+      }}>
       <PagerView style={styles.pagerView}
         scrollEnabled={false}
         ref={pagerView}>
@@ -131,12 +135,16 @@ const EjercicioDojo = ({ navigation }) => {
           <View style={styles.ejercicio}>
             <View style={styles.fila}>
               <View style={styles.columna}>
-                <View style={styles.marcoSimbolo}>
-                  <Text style={styles.txtSimbolo}>{hoja.operacion}</Text>
+                <View style={styles.marcoOperacion}>
+                  <Text style={styles.txtOperacion}>{hoja.operacion}</Text>
                 </View>
               </View>
               <View style={styles.columna}>
-                {operandos(2)}
+                <View style={styles.fila}>
+                  <View style={styles.columna}>
+                    {operandos()}
+                  </View>
+                </View>
               </View>
               <View style={styles.columna}>
                 <Text style={styles.titulo}>{hoja.titulo}</Text>
@@ -164,11 +172,9 @@ const EjercicioDojo = ({ navigation }) => {
             </View>
             <View style={styles.linea}></View>
             <View style={styles.fila}>
-              <View style={styles.marcoSimbolo}>
-                <Text style={styles.txtSimbolo}>=</Text>
-              </View>
-              <View style={styles.marcoSimbolo}>
+              <View style={styles.marcoResultado}>
                 <View style={styles.resultado}>
+                  <Text style={styles.txtSigno}>=</Text>
                   <Text style={styles.txtResultado}>{hoja.resultado}</Text>
                 </View>
               </View>
@@ -178,18 +184,18 @@ const EjercicioDojo = ({ navigation }) => {
             {keyboard()}
           </View>
         </View>
-        <View style={styles.container} key="2">
+        <View style={styles.containerResultados} key="2">
           <Text style={styles.tituloGrafico}>Efectividad</Text>
-          <CircularProgress inititalProgress={stats.correctas / 10}></CircularProgress>
+          <CircularProgress initialProgress={stats.porcentage}></CircularProgress>
           <View style={styles.row}>
             <View style={styles.column1}>
               <Text style={styles.tituloGrafico}>Correctas</Text>
-              <Text style={styles.contador}>{stats.correctas}</Text>
+              <Text style={styles.contadorBlanco}>{stats.correctas}</Text>
             </View>
             <View style={styles.column2}>
               <Text style={styles.tituloGrafico}>Tiempo promedio</Text>
               <View style={styles.row}>
-                <Text style={styles.contador}>{(stats.tiempoPromedio / 1000).toFixed(1)}</Text>
+                <Text style={styles.contadorBlanco}>{(stats.tiempoPromedio / 1000).toFixed(1)}</Text>
                 <Text style={styles.small}>secs</Text>
               </View>
             </View>
@@ -202,7 +208,7 @@ const EjercicioDojo = ({ navigation }) => {
           <Text style={styles.etiqueta}>Buen intento, ¡Continúa entrenando!</Text>
         </View>
       </PagerView>
-    </ImageBackground >
+    </ImageBackground>
   )
 }
 
@@ -214,7 +220,6 @@ const styles = {
   },
   container: {
     flexDirection: 'column',
-    padding: 0,
   },
   icons: {
     color: 'white',
@@ -225,16 +230,16 @@ const styles = {
     flex: 1,
   },
   titulo: {
-    color: 'white',
-    fontSize: 28,
-    textAlign: 'center',
+    fontSize: 22,
+    width: width * .6,
+    textAlign: 'right',
+    color: '#454A3F',
   },
   contador: {
     fontSize: 100,
-    color: 'white',
+    color: '#454A3F',
     fontFamily: 'DS-Digital',
-    textAlign: 'center',
-    marginBottom: 21,
+    textAlign: 'right',
   },
   fila: {
     flexDirection: "row",
@@ -244,65 +249,107 @@ const styles = {
   columna: {
     flexDirection: 'column',
     flexWrap: 'wrap',
-    justifyContent: 'center',
   },
   marcoSimbolo: {
     width: 60,
-    height: 60,
     marginHorizontal: 4,
   },
   txtSimbolo: {
-    color: 'black',
-    fontSize: 40,
+    color: '#454A3F',
+    fontSize: 44,
     paddingLeft: 16,
     fontFamily: 'DS-Digital',
   },
+  marcoOperacion: {
+    width: 60,
+    paddingTop: 90,
+    marginHorizontal: 4,
+  },
+  txtOperacion: {
+    color: '#454A3F',
+    fontSize: 120,
+    fontFamily: 'DS-Digital',
+  },
+  marcoResultado: {
+    width: '100%',
+    marginLeft: '10%',
+    textAlign: 'left',
+  },
   resultado: {
-    backgroundColor: 'white',
-    height: 60,
-    width: 80,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    backgroundColor: '#969D8D',
+    height: 80,
+    width: '90%',
     borderWidth: 2,
     borderColor: 'gray',
-    paddingLeft: 12,
+    paddingHorizontal: 12,
     borderRadius: 6,
-    marginBottom: 10,
+  },
+  txtSigno: {
+    flex: 2,
+    color: '#454A3F',
+    fontSize: 72,
+    fontFamily: 'DS-Digital',
   },
   txtResultado: {
-    color: 'black',
-    fontSize: 40,
+    flex: 8,
+    color: '#454A3F',
+    fontSize: 72,
+    fontFamily: 'DS-Digital',
+    textAlign: 'right',
   },
   ejercicio: {
-    backgroundColor: '#DDDDDD',
-    paddingVertical: 20,
+    backgroundColor: '#969D8D',
+    height: '60%',
+    width: '100%',
+    paddingTop: 30,
   },
   linea: {
-    backgroundColor: 'black',
+    backgroundColor: '#454A3F',
     height: 3,
     width: '40%',
     borderRadius: 1,
-    marginLeft: '30%',
+    marginLeft: '10%',
     marginBottom: 10,
   },
   teclado: {
     flexDirection: 'row',
-    width: '70%',
+    width: '100%',
+    height: '40%',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    marginLeft: '15%',
-    marginTop: 48,
+    paddingVertical: 20,
+    backgroundColor: '#50505A',
+  },
+  linearGradient: {
+    flex: 1,
+    paddingLeft: 15,
+    paddingRight: 15,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.29,
+    shadowBottomLeftRadius: 32,
+    shadowBottomRightRadius: 32,
+    shadowTopLeftRadius: 14,
+    shadowTopRightRadius: 14,
+    elevation: 7,
   },
   tecla: {
-    width: 64,
+    width: '30%',
     height: 64,
-    backgroundColor: 'lightseagreen',
-    borderRadius: 6,
-    margin: 4,
-  },
-  roja: {
-    backgroundColor: 'red',
-  },
-  verde: {
-    backgroundColor: 'limegreen',
+    margin: '1%',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
   },
   txtTecla: {
     fontSize: 32,
@@ -332,6 +379,10 @@ const styles = {
     width: '70%',
     alignItems: 'center',
   },
+  containerResultados: {
+    flexDirection: 'column',
+    paddingTop: 16,
+  },
   small: {
     fontSize: 20,
     color: 'white',
@@ -357,7 +408,13 @@ const styles = {
     fontFamily: 'OpenSans-Light',
     position: 'absolute',
     bottom: 20,
-  }
+  },
+  contadorBlanco: {
+    fontSize: 100,
+    color: 'white',
+    fontFamily: 'DS-Digital',
+    textAlign: 'right',
+  },
 }
 
 export default EjercicioDojo;
